@@ -7,3 +7,4 @@ This is based on the lovely blog series found [here](https://os.phil-opp.com)
 
 # Documentation
 [A Freestanding Rust Binary](documentation/freestanding_binary.md)
+[A Minimal Kernel](documentation/minimal_rust_kernel.md)
