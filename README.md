@@ -6,5 +6,5 @@ I will be documenting my learning process in individual readme files found in th
 This is based on the lovely blog series found [here](https://os.phil-opp.com)
 
 # Documentation
-[A Freestanding Rust Binary](documentation/freestanding_binary.md)
-[A Minimal Kernel](documentation/minimal_rust_kernel.md)
+* [A Freestanding Rust Binary](documentation/freestanding_binary.md)
+* [A Minimal Kernel](documentation/minimal_rust_kernel.md)
