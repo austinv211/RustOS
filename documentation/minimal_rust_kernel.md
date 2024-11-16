@@ -76,3 +76,50 @@ error: could not compile `rustos` (bin "rustos") due to 1 previous error; 1 warn
 ```
 
 to fix this we need to recompile the core and compiler_builtins for our new custom target
+
+for access tror memcpy, memset, memcmp it is included in compiler_builtins by default, but we need to specify the following to enable mem features
+```
+build-std-features: ["compiler-builtins-mem"]
+```
+
+## Printing to the Screen
+the easiest way for printing to the screen at this stage is the VGA text buffer
+* the VGA text buffer is a special memory area mapped to the VGA hardware that contains the contents displayed on the screen.
+* it normally consists of 25 lines that each contain 80 character cells. Each character cell displays an ASCII character with some foreground and background colors
+
+for printing "Hello World", we just need to know that the buffer is locateed at address `0xb8000` and that each character cell consists of an ASCII byte and a color byte
+
+we start at the address for the buffer and write the character and color bytes for our phrase
+
+#### note on unsafe block
+unsafe does not turn off Rust's safety checks, this just lets us do some additional things:
+* Dereference a raw pointer
+* Call an unsafe function or method
+* Access or modify a mutable static variable
+* Implement an unsafe trait
+* Access fields of a union
+
+see additional info on unsafe Rust [unsafe rust](https://doc.rust-lang.org/stable/book/ch19-01-unsafe-rust.html#unsafe-superpowers)
+
+we want to minimize the use of unsafe as much as possible, one way to do this is with safe abstractions
+example, we could create a VGS buffer type that encapsulates all unsafety and ensures that it is impossible to do anything wrong from the outside
+
+### Running our Kernel
+* first we need to turn our compiled kernel into a bootable disk image by linking it with a bootloader
+* then we can run the disk image in the QEMU virtual machine or boot it on real hardware using a USB stick
+
+as mentioned previously, we are using a crafte for the bootloader; so lets add bootloader to our dependencies in Cargo.toml
+
+add the bootloader as a dependency is not enough to actually create a bootable disk image.
+The problem is that we need to link our kernel with the bootloader after compilation, but cargo has no support for post-build scripts
+
+To solve this issue, there is a tool named `bootimage` that first compiles the kernel and bootloader, then links them together to create a bootable disk image
+
+1. outside of project install bootimage with `cargo install bootimage`
+2. add llvm-tools-preview with `rustup component add llvm-tools-preview`
+3. back in project directory run `cargo bootimage`
+
+for running in QEMU
+```
+qemu-system-x86_64.exe -drive format=raw,file=target/x86_64-rustos/debug/bootimage-rustos.bin
+```
