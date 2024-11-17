@@ -3,7 +3,7 @@ use lazy_static::lazy_static;
 use spin::Mutex;
 use volatile::Volatile;
 
-// this is kinda useless right now because its immutable!
+// now with lazy static
 lazy_static! {
     pub static ref WRITER: Mutex<Writer> = Mutex::new(Writer {
         column_position: 0,
