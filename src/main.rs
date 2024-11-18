@@ -6,6 +6,7 @@
 
 use core::panic::PanicInfo;
 
+mod serial;
 mod vga_buffer;
 
 // TESTS
@@ -14,19 +15,19 @@ mod vga_buffer;
 // basically a list of references to types that can be called like a function
 #[cfg(test)] // only include function for tests
 pub fn test_runner(tests: &[&dyn Fn()]) {
-    println!("Running {} tests", tests.len());
+    serial_println!("Running {} tests", tests.len());
     for test in tests {
         test();
     }
-    
+
     exit_qemu(QemuExitCode::Success);
 }
 
 #[test_case]
 fn trivial_assertion() {
-    print!("trivial assertion... ");
+    serial_print!("trivial assertion... ");
     assert_eq!(1, 1);
-    println!("[ok]");
+    serial_println!("[ok]");
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -38,19 +39,28 @@ pub enum QemuExitCode {
 
 pub fn exit_qemu(exit_code: QemuExitCode) {
     use x86_64::instructions::port::Port;
-    
+
     unsafe {
         let mut port = Port::new(0xf4);
         port.write(exit_code as u32);
     }
 }
 
-
-
 // we mark this as a diverging function by having it return the never type
+#[cfg(not(test))] // new attribute
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
     println!("{}", info);
+    loop {}
+}
+
+// our panic handler in test mode
+#[cfg(test)]
+#[panic_handler]
+fn panic(info: &PanicInfo) -> ! {
+    serial_println!("[failed]\n");
+    serial_println!("Error: {}\n", info);
+    exit_qemu(QemuExitCode::Failed);
     loop {}
 }
 
@@ -59,7 +69,7 @@ pub extern "C" fn _start() -> ! {
     println!("Hello World{}", "!");
     // panic!("Some panic message"); for testing panic
 
-    // only loaded on test 
+    // only loaded on test
     #[cfg(test)]
     test_main();
 
