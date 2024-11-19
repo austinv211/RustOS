@@ -14,10 +14,10 @@ mod vga_buffer;
 // The argument type &[&dyn Fn()] is a slice of a trait object references on the Fn() trait
 // basically a list of references to types that can be called like a function
 #[cfg(test)] // only include function for tests
-pub fn test_runner(tests: &[&dyn Fn()]) {
+pub fn test_runner(tests: &[&dyn Testable]) {
     serial_println!("Running {} tests", tests.len());
     for test in tests {
-        test();
+        test.run();
     }
 
     exit_qemu(QemuExitCode::Success);
@@ -25,9 +25,7 @@ pub fn test_runner(tests: &[&dyn Fn()]) {
 
 #[test_case]
 fn trivial_assertion() {
-    serial_print!("trivial assertion... ");
     assert_eq!(1, 1);
-    serial_println!("[ok]");
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -43,6 +41,22 @@ pub fn exit_qemu(exit_code: QemuExitCode) {
     unsafe {
         let mut port = Port::new(0xf4);
         port.write(exit_code as u32);
+    }
+}
+
+// create a new Testable Trait
+pub trait Testable {
+    fn run(&self) -> ();
+}
+
+// we implement the run function by first printing the function name using the any::type_name function
+// this function is implemented directly in the compiler and returns a string description of every type
+// for functions, the type is their name, so this is exactly what we want in this case
+impl<T> Testable for T where T: Fn() {
+    fn run(&self) -> () {
+        serial_print!("{}...\t", core::any::type_name::<T>());
+        self();
+        serial_println!("[ok]");
     }
 }
 

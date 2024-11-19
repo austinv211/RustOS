@@ -29,3 +29,17 @@ The chips implementing a serial interface are called UARTs. The common UARTs tod
 We will use the uart_16550 crate to initialize the UART and send data over the serial port.
 
 The uart_16550 crate contains a `SerialPort` struct that represents the UART registers, but we still need to construct an instance of it ourselves. For that, we create a new `serial` module
+
+## Timeouts
+since `cargo test` waits until the test runner exits, a test that never returns can block the test runner forever.
+That's unfortanate, but not a big problem in practice since it's usually easy to avoid endless loops. In our case endless loops can occur in a few circumstances
+* the bootloader fails to load our kernel, which causes the system to reboot endlessly
+* the BIOS/UEFI firware fails to load the bootloader, which causes the same endless rebooting
+* the CPU enters a loop {} statement at the end of some of our functions, for example because the QEMU device doesn't work properly
+* the hardware causes a system reset, for example when a CPU exception is not caught
+
+Since endless loops can occur in so many situations, the bootimage tool sets a timeout of 5 minutes for each test executable by default.
+If the test does not finish within this time, it is marked as failed and a "Timed Out" error is printed to the console. This ensures that tests that are stuck in an endless loop don't block `cargo test` forever.
+
+## Insert Printing Automatically
+manually adding print statements for every test we write is cumbersome, so let's update our test_runner to print these messages automatically. To do that, we need to create a new Testable trait
